@@ -40,6 +40,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     bio = models.TextField(blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
 
+    fieldsets = ['email', 'first_name','last_name','date_of_birth',
+                 'phone','bio']
+
+    ordering = ['date_joined']
 
     # connects to usermanager class
     objects = UserManager()
@@ -47,4 +51,4 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
 
     def __str__(self):
-        return self.name
+        return self.first_name if self.first_name else self.email

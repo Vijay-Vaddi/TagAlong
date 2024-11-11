@@ -1,6 +1,8 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-class UserTest(TestCase):
+
+
+class TestUser(TestCase):
     """test cases for users"""
 
     def test_create_superuser(self):
