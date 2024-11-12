@@ -43,11 +43,25 @@ class PublicUserApiTests(TestCase):
             'password':'test123',
             'name':"Test Name",
         }
+        # create once for test here
         create_user(**payload)
+        # then try to create again to see if email already exists error comes
         response = self.client.post(CREATE_USER_URL, payload)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_password_too_short_error(self):
         """Test an error is returned if password is less than 5 chars"""
-        
+        payload = {
+            'email': 'test@example.com',
+            'password':'test',
+            'name':'Test Name',
+        }
+        response = self.client.post(CREATE_USER_URL, payload)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # check if user is not created when password is short
+        user_exists = get_user_model().objects.filter(
+            email=payload['email']
+        ).exists() #exists gives true or false
+        self.assertFalse(user_exists)
