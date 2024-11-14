@@ -13,8 +13,8 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/users/',include('users.urls')),
     path('admin/', admin.site.urls),
-    path("api/schema", SpectacularAPIView.as_view(),name="api-schema"),
-    path("api/docs",
+    path("api/schema/", SpectacularAPIView.as_view(),name="api-schema"),
+    path("api/docs/",
          SpectacularSwaggerView.as_view(url_name='api-schema'),
          name="api-docs"),
 ]
