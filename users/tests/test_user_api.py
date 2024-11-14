@@ -9,6 +9,9 @@ from rest_framework import status
 
 # api url we're testing
 CREATE_USER_URL = reverse('user:create_user')
+TOKEN_URL = reverse('token_obtain_pair')
+REFRESH_URL = reverse('token_refresh')
+UPDATE_USER_URL = reverse('user:update_user')
 
 # helper function to create a user that we'll use for testing
 def create_user(**params):
@@ -76,6 +79,7 @@ class JWTAuthenticationTests(APITestCase):
         )
         self.token_url = reverse('token_obtain_pair')
         self.refresh_url = reverse('token_refresh')
+        self.client = APIClient()
 
     def test_token_creation_with_valid_credentials(self):
         """Test to create token with valid creds"""
@@ -115,3 +119,42 @@ class JWTAuthenticationTests(APITestCase):
                                     {'refresh':'wrong_refresh_token'})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertNotIn('access', response.data)
+
+
+class PrivateUserAPITests(TestCase):
+    """Test API that needs authentication"""
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            email='test@example.com',
+            password='password',
+            first_name='Test name'
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_get_user_profile_success(self):
+        """Test getting user profile successfully"""
+        response = self.client.get(UPDATE_USER_URL)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {
+            'first_name':self.user.first_name,
+            'email':self.user.email,
+        })
+        self.assertNotIn('password', response.data)
+
+    def test_post_request_not_allowed(self):
+        """Test post request not allowed on GET user"""
+        response = self.client.post(UPDATE_USER_URL, {})
+
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_update_user_profile(self):
+        """Test update user profile for authenticed user"""
+        payload = {'first_name':'Updated New name', 'password':'pass_updated'}
+        response = self.client.patch(UPDATE_USER_URL,payload)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, payload['first_name'])
+        self.assertTrue(self.user.check_password(payload['password']))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  
