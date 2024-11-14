@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 
 # api url we're testing
@@ -65,3 +65,53 @@ class PublicUserApiTests(TestCase):
             email=payload['email']
         ).exists() #exists gives true or false
         self.assertFalse(user_exists)
+
+class JWTAuthenticationTests(APITestCase):
+    """Test cases for JWT authentication"""
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            email="test@example.com",
+            password='password123',
+        )
+        self.token_url = reverse('token_obtain_pair')
+        self.refresh_url = reverse('token_refresh')
+
+    def test_token_creation_with_valid_credentials(self):
+        """Test to create token with valid creds"""
+        response = self.client.post(self.token_url,
+                {'email':'test@example.com',
+                 'password':'password123'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', response.data)
+        self.assertIn('refresh', response.data)
+
+    def test_token_creation_with_invalid_credentials(self):
+        """Token creation with invalid creds"""
+        response = self.client.post(self.token_url,
+                                    {'email':'test@example.com',
+                                     'password':'sddlkfjsdklfj'})
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn('access',response.data)
+        self.assertNotIn('refresh',response.data)
+
+    def test_token_refresh_with_valid_token(self):
+        """test token refresh with valid token"""
+        # generate token first
+        response = self.client.post(self.token_url,
+                                    {'email':'test@example.com',
+                                     'password':'password123'})
+        refresh_token = response.data['refresh']
+
+        # test token refresh endpoint
+        response = self.client.post(self.refresh_url,
+                                    {'refresh':refresh_token})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', response.data)
+
+    def test_token_refresh_with_invalid_token(self):
+        """test token refresh with invalid token"""
+        response = self.client.post(self.refresh_url,
+                                    {'refresh':'wrong_refresh_token'})
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotIn('access', response.data)
