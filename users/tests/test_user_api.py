@@ -127,7 +127,8 @@ class PrivateUserAPITests(TestCase):
         self.user = get_user_model().objects.create_user(
             email='test@example.com',
             password='password',
-            first_name='Test name'
+            first_name='Test name',
+            
         )
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
@@ -140,6 +141,7 @@ class PrivateUserAPITests(TestCase):
         self.assertEqual(response.data, {
             'first_name':self.user.first_name,
             'email':self.user.email,
+            'last_name':self.user.last_name,
         })
         self.assertNotIn('password', response.data)
 
@@ -151,10 +153,10 @@ class PrivateUserAPITests(TestCase):
 
     def test_update_user_profile(self):
         """Test update user profile for authenticed user"""
-        payload = {'first_name':'Updated New name', 'password':'pass_updated'}
+        payload = {'first_name':'Updated New name','last_name':'', 'password':'pass_updated'}
         response = self.client.patch(UPDATE_USER_URL,payload)
 
         self.user.refresh_from_db()
         self.assertEqual(self.user.first_name, payload['first_name'])
         self.assertTrue(self.user.check_password(payload['password']))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
